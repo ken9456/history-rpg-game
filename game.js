@@ -28,6 +28,41 @@ function enterGame(){inGame=true;menu=null;$('home').classList.add('hidden');$('
 function moveTo(x,y){if(menu||!inGame)return;const now=performance.now();if(now-lastMove<180)return;lastMove=now;const known=E.s.discovered.length;const r=E.move(x,y);if(!r.ok)toast(r.reason);else if(E.s.discovered.length>known){const place=E.port(E.s.discovered[E.s.discovered.length-1]);toast('發現新地點 · '+place.name);audio.play('good');}else audio.play('tap');}
 function direction(dx,dy){stopGuide();if(E.s)moveTo(E.s.x+dx,E.s.y+dy);}
 function guided(){if(E.s&&!E.s.pending&&!E.s.finished){E.notice('bearing');E.commit();}}
+// Sea-cell navigation: follow a reachable route rather than a straight-line bearing.
+function voyageNavigation(s){
+ const port=id=>D.ports.find(p=>p.id===id);
+ const eastern=s.route==='east'||(s.x>=D.EAST_OFFSET+8&&s.y>=16);
+ const steps=eastern?[
+  ['cape','好望角'],['mozambique','東非海岸'],['malindi','馬林迪'],['calicut','卡利庫特（印度）']
+ ]:[['caribbean','加勒比海・巴哈馬群島']];
+ const reached=id=>s.discovered.includes(id)||s.visitedPorts?.[id]||s.flags?.['visited_'+id];
+ let choice=null;
+ for(const [id,name] of steps){
+  const goal=port(id);if(!goal)continue;
+  // Once south of the Cape and already sailing east, do not turn back west.
+  if(id==='cape'&&s.x>=D.EAST_OFFSET+19&&s.y>=25)continue;
+  if(id==='mozambique'&&s.x>=D.EAST_OFFSET+22&&s.y<=22)continue;
+  if(id==='malindi'&&s.x>=D.EAST_OFFSET+25&&s.y<=19)continue;
+  if(reached(id))continue;
+  const destinations=[];
+  for(let y=goal.y-1;y<=goal.y+1;y++)for(let x=goal.x-1;x<=goal.x+1;x++){
+   if(D.sea(x,y))destinations.push({x,y});
+  }
+  let best=null;
+  for(const dest of destinations){
+   const route=D.path(s.x,s.y,dest.x,dest.y);
+   if((route.length||s.x===dest.x&&s.y===dest.y)&&(!best||route.length<best.length))best=route;
+  }
+  if(best){choice={name,route:best};break;}
+ }
+ if(!choice)return {dirs:[],message:'已接近目的地，請留意港口及歷史事件。'};
+ const first=choice.route[0];
+ if(!first)return {dirs:[],message:`已到達${choice.name}附近，請留意劇情或靠岸選項。`};
+ const dx=first.x-s.x,dy=first.y-s.y;
+ const dir=dx<0?'west':dx>0?'east':dy<0?'north':'south';
+ const names={west:'西',east:'東',north:'北',south:'南'};
+ return {dirs:[dir],message:`前往${choice.name}：下一格建議向${names[dir]}航行（沿可通行海格導航）。`};
+}
 function renderHUD(){if(!E.s)return;const s=E.s,colors={food:'#9ac7a9',hull:'#8fbaca',morale:'#dca98b',knowledge:'#c6b3d2'},labels={food:'補給',hull:'船況',morale:'士氣',knowledge:'航海知識'};
  $('playerLabel').textContent=s.name+' · 曙光號';$('resourceBars').innerHTML=Object.keys(VoyageEngine.MAX).map(k=>`<div class="resource ${s[k]<=5&&k!=='knowledge'?'low':''}"><div><span>${labels[k]}</span><strong>${s[k]} <em>/ ${VoyageEngine.MAX[k]}</em></strong></div><div class="meter"><i style="width:${s[k]/VoyageEngine.MAX[k]*100}%;background:${colors[k]}"></i></div></div>`).join('');
  const target=E.target(),scene=target?C.scenes[E.chapterKey(target.id)]:null;
@@ -35,9 +70,9 @@ function renderHUD(){if(!E.s)return;const s=E.s,colors={food:'#9ac7a9',hull:'#8f
  $('missionTitle').textContent=s.finished?E.endingName():scene?.title||'海圖以外，有甚麼？';
  $('missionDescription').textContent=s.finished?'回顧整段航跡，再看看真正航海家的故事。':s.route?`向${target.shortName||target.name}附近探索。沿岸補給，留意每個決定的代價。`:'向西探索大西洋，或沿非洲向南。船由你掌舵，不用預先選航線。';
  $('chapterProgress').innerHTML=s.route?[0,1,2,3,4,5].map(n=>`<i class="${s.stage>n?'done':s.stage===n?'active':''}"></i>`).join(''):'';
- const arrows={west:['←','西'],east:['→','東'],north:['↑','北'],south:['↓','南']};const dirs=E.heading();
- $('bearing').textContent=s.finished?'下一次，可以用新的方法出發。':'副船長：留意'+dirs.map(d=>arrows[d][1]).join('／')+'方；遇岸要自行繞行。';
- $('bearingArrows').innerHTML=s.finished?'':dirs.map(d=>`<span class="bearing-arrow"><b>${arrows[d][0]}</b><span>向${arrows[d][1]}探索</span></span>`).join('');$('guidedButton').disabled=!!s.pending||s.finished;
+ const arrows={west:['←','西'],east:['→','東'],north:['↑','北'],south:['↓','南']};const nav=voyageNavigation(s),dirs=nav.dirs;
+ $('bearing').textContent=s.finished?'下一次，可以用新的方法出發。':'副船長：'+nav.message;
+ $('bearingArrows').innerHTML=s.finished?'':dirs.map(d=>`<span class="bearing-arrow"><b>${arrows[d][0]}</b><span>下一格向${arrows[d][1]}</span></span>`).join('');$('guidedButton').disabled=!!s.pending||s.finished;
  const near=D.ports.find(p=>Math.abs(p.x-s.x)+Math.abs(p.y-s.y)<=1);$('locationName').textContent=near?.shortName||near?.name||'未知海域 · 探索中';$('routeLabel').textContent=s.route==='west'?'WEST · 向西探索':s.route==='east'?'SOUTH · 沿非洲探索':'SET SAIL · 自由起航';
  $('voyageDay').innerHTML=`<small>模擬航行</small><strong>第 ${s.days} 日</strong><small>已行 ${s.step} 格</small>`;$('classroomClock').textContent=`課堂 ${Math.floor(s.classroomSeconds/60)} / 30 分鐘`;$('cardCount').textContent=s.cards.length;
  const nearest=D.ports.filter(p=>['port','home','goal'].includes(p.type)&&s.revealed[D.idx(p.x,p.y)]).map(p=>({p,d:Math.abs(p.x-s.x)+Math.abs(p.y-s.y)})).sort((a,b)=>a.d-b.d)[0];
