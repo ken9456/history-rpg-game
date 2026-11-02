@@ -74,7 +74,12 @@ class VoyageEngine{
   const goalId=s.route==='west'?'caribbean':'calicut';
   const goal=this.port(goalId);
   const near=p=>p&&Math.abs(s.x-p.x)+Math.abs(s.y-p.y)<=1;
-  if(near(goal)&&!s.flags[goalId]){
+  // The Caribbean landing marker (10,9) and the playable island anchorage
+  // (11,10) are diagonal neighbours. The ship cannot stand on the land marker;
+  // reaching the island anchorage must count as arrival as well.
+  const landingSupply=s.route==='west'?this.port('caribbean_supply'):null;
+  const atDestination=near(goal)||(landingSupply&&near(landingSupply));
+  if(atDestination&&!s.flags[goalId]){
    s.stage=routeTargets.length-1;
    s.discovered=unique([...s.discovered,goalId]);
    this.effects({knowledge:1,morale:1});
