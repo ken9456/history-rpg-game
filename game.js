@@ -32,11 +32,11 @@ function guided(){if(E.s&&!E.s.pending&&!E.s.finished){E.notice('bearing');E.com
 // The northeast arrow describes a general bearing; movement remains four-way.
 function voyageNavigation(s){
  const cape=D.ports.find(p=>p.id==='cape');
- // The Cape lies at (15,29). Include nearby sea cells and the eastern African coast.
- // Keep the initial west/south choices everywhere before reaching this region.
- const nearCape=!!cape && s.x>=cape.x-3 && s.y>=cape.y-5 && s.y<=cape.y+3;
- const eastAfricanCoast=s.x>=18 && s.y>=15;
- if(nearCape||eastAfricanCoast){
+ // Switch only when the ship is within two orthogonal map steps of Cape of Good Hope.
+ // This matches the four-direction movement system; do not use broad geographic ranges.
+ const capeDistance=cape?Math.abs(s.x-cape.x)+Math.abs(s.y-cape.y):Infinity;
+ const nearCape=capeDistance<=2;
+ if(nearCape){
   return {dirs:['west','northeast'],message:'已接近或繞過好望角：可向西探索大西洋，或向東北沿東非海岸前往馬林迪及印度。向東北須逐格向東或向北航行。'};
  }
  return {dirs:['west','south'],message:'可向西探索大西洋，或沿非洲西岸向南航行，尋找好望角。'};
