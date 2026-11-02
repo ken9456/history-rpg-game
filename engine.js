@@ -32,11 +32,11 @@ class VoyageEngine{
  target(){return this.port(this.targets()[Math.min(this.s.stage,this.targets().length-1)])||null;}
  chapterKey(id){return {calicut:'india',madeira:'madeira',capeverde:'capeverde',angola:'angola',mozambique:'mozambique'}[id]||id;}
  notice(kind){this.s.pending={type:'notice',kind};}
- finishNotice(){const p=this.s.pending;if(p?.type!=='notice')return;this.s.pending=null;if(!this.checkCrisis()&&!this.checkDeadline())this.checkArrival();this.commit();}
+ finishNotice(){const p=this.s.pending;if(p?.type!=='notice')return;this.s.pending=null;if(!this.checkArrival()&&!this.checkCrisis())this.checkDeadline();this.commit();}
  heading(){const s=this.s,t=this.target();if(!t)return ['west','south'];const dx=t.x-s.x,dy=t.y-s.y;const out=[];if(dx)out.push(dx<0?'west':'east');if(dy)out.push(dy<0?'north':'south');return out.length?out:['south'];}
  detectRoute(){const s=this.s;if(s.route)return false;const h=this.port('lisbon');let route=null;if(s.x<=h.x-3)route='west';else if(s.y>=h.y+4)route='east';if(!route)return false;s.route=route;s.lastProgressDay=s.days;this.scene(route+'_departure');this.log('航向帶來的新故事',route==='west'?'你實際向西航行，開始橫渡大西洋的故事。':'你實際沿非洲向南航行，開始通往印度的故事。');return true;}
- checkDeadline(){const s=this.s;if(s.finished)return false;if((s.days>=30&&!s.flags.cape&&!s.flags.caribbean)||s.days-s.lastProgressDay>=30){this.finish(false,'noProgress');return true;}return false;}
- afterSailing(){if(this.checkCrisis()||this.checkDeadline()||this.checkArrival())return;const s=this.s;if((s.step-s.lastSupplyStep>=8||s.food<=6)&&s.step-s.lastSupplyWarning>=6){s.lastSupplyWarning=s.step;this.notice('supply');}}
+ checkDeadline(){const s=this.s;if(s.finished)return false;if((s.days>35&&!s.flags.cape&&!s.flags.caribbean)||s.days-s.lastProgressDay>35){this.finish(false,'noProgress');return true;}return false;}
+ afterSailing(){if(this.checkArrival()||this.checkCrisis()||this.checkDeadline())return;const s=this.s;if((s.step-s.lastSupplyStep>=8||s.food<=6)&&s.step-s.lastSupplyWarning>=6){s.lastSupplyWarning=s.step;this.notice('supply');}}
  tick(seconds){const s=this.s;if(!s||s.classroomClosed||s.pending?.type==='report')return;const n=clamp(Math.floor(seconds),0,10);s.classroomSeconds+=n;if(!s.finished)s.elapsed+=n;if(s.classroomSeconds>=1440&&!s.finished){s.pending=null;this.finish(true,'classroom');return true;}if(s.classroomSeconds>=s.classroomLimit){s.classroomClosed=true;if(!s.finished){s.pending=null;this.finish(true,'classroom');}s.pending={type:'report'};this.log('課堂時間到，保存本次成果','30分鐘課堂模式已結算。未讀史實可在成果頁重看；閱讀時間不影響綜合分數。');this.commit();return true;}return false;}
 
  scene(key,after='sail',extra={}){this.s.pending={type:'scene',key,frame:0,after,...extra};}
@@ -45,7 +45,7 @@ class VoyageEngine{
  sceneChoice(i){const p=this.s.pending;if(p?.type!=='scene')return;const scene=this.content.scenes[p.key];if(p.frame!==scene.frames.length-1)return;const c=scene.choices?.[i];if(!c)return;this.effects(c.effects);this.s.decisions.push({day:this.s.days,title:scene.title,choice:c.text,method:c.tag||'story'});this.log(scene.title,c.text+(c.hint?'；'+c.hint:''));if(c.tag==='inquiry')this.s.inquiries=unique([...this.s.inquiries,'prologue']);this.finishScene();}
  finishScene(){const p=this.s.pending;if(p?.type!=='scene')return;const s=this.s,scene=this.content.scenes[p.key];s.sceneRead=unique([...s.sceneRead,p.key]);if(scene.historyId)s.historySeen=unique([...s.historySeen,scene.historyId]);s.pending=null;
   if(p.after==='depart')this.notice('bearing');
-  else if(p.after==='milestone'){s.stage++;s.flags[p.milestone]=true;s.lastProgressDay=s.days;s.lessonUnlocks=unique([...s.lessonUnlocks,p.key]);if(['cape','india','caribbean'].includes(p.key))s.historySeen=unique([...s.historySeen,{cape:'dias',india:'gama',caribbean:'columbus'}[p.key]]);this.log('完成航程章節',scene.title);if(s.stage>=this.targets().length){if(!this.checkCrisis())this.finish(false);}}
+  else if(p.after==='milestone'){s.stage++;s.flags[p.milestone]=true;s.lastProgressDay=s.days;s.lessonUnlocks=unique([...s.lessonUnlocks,p.key]);if(['cape','india','caribbean'].includes(p.key))s.historySeen=unique([...s.historySeen,{cape:'dias',india:'gama',caribbean:'columbus'}[p.key]]);this.log('完成航程章節',scene.title);if(s.stage>=this.targets().length){this.finish(false);}}
   else if(p.after==='review')s.pending={type:'review'};
   else if(p.after==='report')s.pending={type:'report'};
   else if(p.after==='epilogue')this.nextEpilogue();
@@ -125,7 +125,7 @@ class VoyageEngine{
  }
  retryMini(){const p=this.s.pending;if(p?.type!=='result'||!p.miniResult?.failed)return false;if(this.checkCrisis()){this.commit();return false;}const m=p.miniResult;this.s.days+=2;this.startMini(m.kind,m.eventKey||m.kind);this.s.pending.retry=true;this.commit();return true;}
  finish(returned=false,reason=null){const s=this.s;if(s.finished)return false;const forced=['supplyMorale','noProgress'].includes(reason);const complete=!forced&&!returned&&!!s.route&&s.stage>=this.targets().length;if(!forced&&!returned&&!complete)return false;if(returned&&!reason&&(s.pending||s.step===0))return false;
-  s.finished=true;s.returned=!complete;s.endReason=reason;s.pending=null;s.ending=forced?'ordinary':returned?'return':s.improvements.length>=2&&s.setbacks.length>=2?'scholar':s.cards.length>=8&&s.resolved.length>=4?'legend':'captain';
+  s.finished=true;s.returned=!complete;s.endReason=reason;s.pending=null;s.ending=forced?'ordinary':returned?'return':s.cards.length>=8&&s.resolved.length>=4?'legend':s.improvements.length>=2&&s.setbacks.length>=2?'scholar':'captain';
   s.result={cards:[...s.cards],places:[...s.discovered],resolved:[...s.resolved],improvements:[...s.improvements],days:s.days,steps:s.step,completed:complete};this.log('航程結局',this.endingName());this.scene('ending_'+s.ending,'review');this.commit();return true;
  }
  endingName(){return {legend:'傳奇探索家',return:'勇敢的歸航者',scholar:'求知的航海家',captain:'遠航船長',ordinary:'平凡的航海家'}[this.s.ending]||'自由探索中';}
