@@ -1,0 +1,5 @@
+未知海域：航海家的傳奇
+Version: v0.10.0-rc3
+Date: 2026-10-31 (Hong Kong)
+Status: 本機改版可玩候選版；雲端程式已備妥，實際部署及跨裝置、iPad Safari、正式Google Sites、學生時長仍待驗證。
+Read: PROJECT_STATUS.md, docs/TEST_REPORT.md, NEXT_STEPS.md

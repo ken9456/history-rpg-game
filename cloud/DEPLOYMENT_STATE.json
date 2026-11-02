@@ -1,0 +1,20 @@
+{
+  "status": "script-created-awaits-class-code-and-teacher-oauth",
+  "spreadsheetId": "1YMuz9BA8YOMnLXNq7A7W2QLPyNHav4Tv3xMfNmOOYW4",
+  "spreadsheetUrl": "https://docs.google.com/spreadsheets/d/1YMuz9BA8YOMnLXNq7A7W2QLPyNHav4Tv3xMfNmOOYW4/edit",
+  "folderId": "1rxZETISwYuHLDvst-bu9Kj83YCqRFs_c",
+  "updated": "2026-10-31",
+  "note": "Do not create another spreadsheet. Reuse this private score store. No student records or classroom secret stored here.",
+  "gameFileId": "1EoZ-m9Xqcp5JfAkjE2X6zTMCHw3qqwit",
+  "gameFileUrl": "https://drive.google.com/file/d/1EoZ-m9Xqcp5JfAkjE2X6zTMCHw3qqwit/view?usp=drivesdk",
+  "gameSha256": "0d501b25ff395a63df202e525f7b3bb076847af26854369b15a04bf38e66505e",
+  "execUrl": null,
+  "scriptProjectId": "1i6n96sxxbXkkiPSpjGrQQh7sp5Xv1rCcWrOjW5SuMwyoxU1E24TwI4b5",
+  "scriptProjectUrl": "https://script.google.com/u/0/home/projects/1i6n96sxxbXkkiPSpjGrQQh7sp5Xv1rCcWrOjW5SuMwyoxU1E24TwI4b5/edit",
+  "teacherSignedIn": true,
+  "scriptSaved": true,
+  "teacherEntryPoint": "teacherInitialize",
+  "classCodeConfigured": false,
+  "executionAuthorized": false,
+  "gameBytes": 11618021
+}

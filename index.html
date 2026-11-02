@@ -1,0 +1,56 @@
+<!doctype html>
+<html lang="zh-Hant-HK">
+<head>
+ <meta charset="utf-8">
+ <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+ <meta name="theme-color" content="#092c35">
+ <meta name="description" content="未知海域：航海家的傳奇。香港中二歷史探索 RPG，雙航線、原創角色、航海資源管理與學習日誌。">
+ <title>未知海域：航海家的傳奇</title>
+ <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%23092c35'/%3E%3Cpath d='M31 8 10 43h21zm5 8v27h18L36 16zM9 47h47l-9 9H18z' fill='%23e9c381'/%3E%3C/svg%3E">
+ <link rel="stylesheet" href="styles.css">
+ <script defer src="map-data.js"></script><script defer src="content.js"></script><script defer src="history-v2.js"></script><script defer src="cloud.js"></script><script defer src="engine.js"></script><script defer src="map.js"></script><script defer src="audio.js"></script><script defer src="game.js"></script>
+</head>
+<body>
+ <div id="boot" role="status">正在展開航海圖……</div>
+ <main id="home" class="home hidden" aria-label="遊戲首頁">
+  <div class="home-bg"></div><div class="home-shade"></div>
+  <header class="home-top"><span class="edition">HISTORY ADVENTURE RPG</span><button class="subtle-btn" data-action="settings">聲音與顯示</button></header>
+  <section class="home-copy">
+   <div class="overline">一張未完成的海圖。一段由你決定的旅程。</div>
+   <h1>未知海域</h1><div class="title-rule"><span></span><h2>航海家的傳奇</h2><span></span></div>
+   <p class="home-story">遠方有甚麼？<br>帶上好奇心，和同伴一起尋找答案。</p>
+   <div class="home-actions"><button class="primary" data-action="new">展開新的航程 <span>→</span></button><button id="continueButton" class="glass" data-action="continue">繼續航程</button></div>
+   <div class="home-links"><button data-action="achievements">成就收藏</button><button data-action="leaderboard">航海榜</button><button data-action="help">玩法說明</button><button data-action="teacher">教師資料</button></div>
+  </section>
+  <footer class="home-bottom"><span>探索 · 抉擇 · 成長</span><span>單人／二人合作 · 建議橫向遊玩</span><small>歷史航路 × 虛構冒險</small></footer>
+ </main>
+ <main id="game" class="game hidden" aria-label="航海遊戲">
+  <header class="hud">
+   <button class="brand" data-action="pause" aria-label="開啟航海選單"><span class="brand-icon">✦</span><span>未知海域<small id="playerLabel">航海家的傳奇</small></span></button>
+   <div id="resourceBars" class="resources" aria-label="船隊資源"></div>
+   <div id="voyageDay" class="day-badge" aria-live="polite"></div><div class="hud-actions"><button data-action="journal" title="航海日誌">日誌</button><button data-action="knowledge" title="歷史知識卡">史實</button><button data-action="pause" aria-label="選單">☰</button></div>
+  </header>
+  <div class="play-area">
+   <section class="map-shell" aria-label="航海地圖區域">
+    <canvas id="seaCanvas" aria-label="航海地圖：點按相鄰海格航行，拖曳地圖查看遠方"></canvas>
+    <div class="map-toolbar"><div class="location"><span class="overline" id="routeLabel">海圖</span><strong id="locationName">里斯本</strong></div><div class="map-tools"><button data-action="zoomout" aria-label="縮小地圖">−</button><button data-action="zoomin" aria-label="放大地圖">＋</button><button data-action="overview">全覽</button><button data-action="focus">跟船</button></div></div>
+    <div id="bearingArrows" class="bearing-arrows" aria-label="大方向提示"></div><div class="map-footer"><span id="mapHint">點按相鄰海格，踏出第一步。</span><span class="map-scale">海格與天數為教學簡化</span></div>
+   </section>
+   <aside class="voyage-sidebar">
+    <section class="mission-box"><span class="overline" id="chapterKicker">航海任務</span><h2 id="missionTitle">未完成的海圖</h2><p id="missionDescription"></p><div id="chapterProgress" class="chapter-progress"></div><div class="mission-bearing" id="bearing"></div><button id="guidedButton" class="primary" data-action="guided">請副船長提示方向</button><small>箭頭只作提示；你可自由航行。</small></section>
+    <section class="crew-note"><img src="assets/ines.webp" alt="副船長伊妮絲" width="60" height="60"><div><span>副船長的提醒</span><p id="crewHint">先看風向，再張起船帆。</p></div></section>
+    <div class="navigation"><button data-action="north" aria-label="向北航行">↑</button><button data-action="west" aria-label="向西航行">←</button><span>航向</span><button data-action="east" aria-label="向東航行">→</button><button data-action="south" aria-label="向南航行">↓</button></div>
+    <section class="ship-tools"><button data-action="dock">靠岸補給</button><button data-action="repair">修補船帆</button><button data-action="stars">星盤觀測</button><button data-action="chart">航圖與情報</button></section>
+    <div class="voyage-clock"><span id="classroomClock">課堂 0 / 30 分鐘</span><span id="saveState" role="status">已自動存檔</span></div>
+   </aside>
+  </div>
+  <footer class="bottom-bar"><button data-action="crew">船員相談</button><button data-action="achievements">成就</button><button data-action="knowledge">知識卡 <span id="cardCount">0</span></button><button data-action="help">操作提示</button><button data-action="full">開啟完整遊戲 ↗</button></footer>
+ </main>
+ <section id="storyLayer" class="story-layer hidden" role="dialog" aria-modal="true" aria-label="劇情對話"></section>
+ <div id="modalLayer" class="modal-layer hidden"><section id="modal" class="modal" role="dialog" aria-modal="true" aria-labelledby="modalTitle"></section></div>
+ <div id="toast" class="toast" role="status" aria-live="polite"></div><div id="badgeToast" class="badge-toast hidden" role="status"></div>
+ <input id="importFile" type="file" accept="application/json,.json" hidden>
+ <div id="storageWarning" class="storage-warning hidden" role="alert">這個瀏覽器未能保存進度。請在選單匯出存檔。</div>
+ <noscript>此遊戲需要啟用 JavaScript。請解壓縮完整專案後開啟 index.html，或使用教師提供的完整遊戲網址。</noscript>
+</body>
+</html>

@@ -1,0 +1,65 @@
+[
+  {
+    "frame": 1,
+    "source": "麥哲倫1(1).png",
+    "asset": "assets/story/magellan-1.webp",
+    "width": 1264,
+    "height": 848
+  },
+  {
+    "frame": 2,
+    "source": "麥哲倫2(1).jfif",
+    "asset": "assets/story/magellan-2.webp",
+    "width": 1264,
+    "height": 848
+  },
+  {
+    "frame": 3,
+    "source": "麥哲倫3(1).jfif",
+    "asset": "assets/story/magellan-3.webp",
+    "width": 1264,
+    "height": 848
+  },
+  {
+    "frame": 4,
+    "source": "麥哲倫4(1).jfif",
+    "asset": "assets/story/magellan-4.webp",
+    "width": 1264,
+    "height": 848
+  },
+  {
+    "frame": 5,
+    "source": "麥哲倫5(1).png",
+    "asset": "assets/story/magellan-5.webp",
+    "width": 1264,
+    "height": 848
+  },
+  {
+    "frame": 6,
+    "source": "麥哲倫6(1).png",
+    "asset": "assets/story/magellan-6.webp",
+    "width": 1264,
+    "height": 848
+  },
+  {
+    "frame": 7,
+    "source": "麥哲倫7(1).jfif",
+    "asset": "assets/story/magellan-7.webp",
+    "width": 1264,
+    "height": 848
+  },
+  {
+    "frame": 8,
+    "source": "麥哲倫8(1).jfif",
+    "asset": "assets/story/magellan-8.webp",
+    "width": 1264,
+    "height": 848
+  },
+  {
+    "frame": 9,
+    "source": "麥哲倫9(1).jfif",
+    "asset": "assets/story/magellan-9.webp",
+    "width": 1264,
+    "height": 848
+  }
+]

@@ -1,0 +1,10 @@
+/* Shared leaderboard transport: only the real Apps Script bridge can submit.
+ * A static / pasted HTML never pretends localStorage is a server.
+ */
+(function(root){'use strict';
+const messages={NOT_CONFIGURED:'教師尚未完成雲端設定。',BAD_CLASS_CODE:'課堂碼不正確，請向教師核對。',CLASS_CLOSED:'這個課堂排行榜已關閉或到期。',INVALID_INPUT:'代號或成績格式不符。代號請用中文、英文字母及數字，不要填姓名或學號。',BUSY:'同學正同時上傳，請稍後重試。',RATE_LIMITED:'操作太頻密，請稍候。',RUN_CONFLICT:'這趟航程已提交另一份結果，不能覆寫。',CLASS_FULL:'排行榜已滿，請通知教師。',SCHEMA_MISMATCH:'排行榜欄位已改動，請通知教師檢查。',SERVICE_ERROR:'暫時未能連接服務，成績仍在本機。'};
+function available(){return !!(root.google&&root.google.script&&root.google.script.run);}
+function call(method,payload){return new Promise((resolve,reject)=>{if(!available()){reject(Error('這是本機版。共享排行榜請使用教師部署的 Google 雲端版網址。'));return;}let done=false;const timer=setTimeout(()=>{if(!done){done=true;reject(Error('未確認上傳／讀取結果。成績仍保存在本機；重試會沿用同一航程，不會重複加分。'));}},25000);const finish=(error,r)=>{if(done)return;done=true;clearTimeout(timer);if(error)reject(Error('服務未回應，成績仍保存在本機。'));else if(!r||r.ok!==true)reject(Error(messages[r?.code]||'服務回應異常，請稍後重試。'));else resolve(r);};root.google.script.run.withSuccessHandler(r=>finish(null,r)).withFailureHandler(e=>finish(e))[method](payload);});}
+function payload(s,classCode,alias){const r=s.result;if(!s.finished||!r)throw Error('完成航程後才可分享成績。');return {protocol:1,gameVersion:'0.10.0',classCode,runId:s.id,alias:alias||s.name,route:s.route,ending:s.ending,completed:r.completed,days:r.days,steps:r.steps,elapsedSeconds:s.elapsed,cards:r.cards.slice(),places:r.places.slice(),resolved:r.resolved.slice(),improvements:r.improvements.slice()};}
+root.VoyageCloud={available,payload,ping:()=>call('voyagePing',{protocol:1}),board:(classCode,metric='score',route='all')=>call('voyageBoard',{protocol:1,classCode,metric,route}),submit:async(s,code,alias)=>{const r=await call('voyageSubmit',payload(s,code,alias));if(r.runId!==s.id||!['stored','duplicate'].includes(r.status)||typeof r.receipt!=='string')throw Error('回應未能確認本次航程，請稍後重試。');return r;}};
+})(typeof window!=='undefined'?window:globalThis);

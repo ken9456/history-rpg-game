@@ -1,0 +1,7 @@
+0be742e Prepare bound classroom script and guard teacher initialization
+0422e7a Record recoverable release version history
+0820a4d Package classroom revision with illustrated histories, verified layouts and deployment guides
+10c3055 Restore v0.10 and verify free sailing, histories, single-file build and cloud protocol
+3559af7 Finalize v0.9 candidate, verified gameplay, teaching and deployment package
+0b595c4 Implement complete dual-route RPG, original art, recovery, reports and regression tests
+737b7dd v0.1 preserve original game and define RPG upgrade
