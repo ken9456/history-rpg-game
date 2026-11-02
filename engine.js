@@ -95,14 +95,27 @@ class VoyageEngine{
    }
   }
   const routeTargets=this.targets();
-  // The Cape is also an important historical landmark even if earlier simulated
-  // supply stops were skipped. Preserve the existing storm challenge.
-  if(s.route==='east'&&!s.flags.cape){const cape=this.port('cape');if(near(cape)){
-   s.stage=Math.max(s.stage,routeTargets.indexOf('cape'));
-   if(!s.flags.capeChallenge&&this.content.events.capeStorm){s.flags.capeChallenge=true;this.startEvent('capeStorm');return true;}
+  // The Cape is a route-independent landmark. Entering its two-tile area
+  // switches the continuing voyage to the East route and permanently records
+  // the approach, even if early movements had inferred the West route.
+  const cape=this.port('cape');
+  const atCape=cape&&Math.abs(s.x-cape.x)+Math.abs(s.y-cape.y)<=2;
+  if(atCape&&!s.flags.capeApproach){
+   s.flags.capeApproach=true;
+   this.log('抵達好望角附近','船隊已抵達好望角附近。完成迪亞士的歷史故事後，可沿東非海岸繼續向印度航行。');
+  }
+  if(atCape&&!s.flags.cape){
+   if(s.route!=='east'){
+    s.route='east';
+    this.log('轉往印度航線','船隊沿非洲南端探索，改以通往印度的東線歷史章節繼續航行。');
+   }
+   s.stage=Math.max(s.stage,this.targets().indexOf('cape'));
+   if(!s.flags.capeChallenge&&this.content.events.capeStorm){
+    s.flags.capeChallenge=true;this.startEvent('capeStorm');return true;
+   }
    s.discovered=unique([...s.discovered,'cape']);this.effects({knowledge:1,morale:1});
    this.scene('cape','milestone',{milestone:'cape'});return true;
-  }}
+  }
   const p=this.target();if(!near(p))return false;
   // The Cape storm is a full playable event before the landmark story.
   if(p.id==='cape'&&!s.flags.capeChallenge&&this.content.events.capeStorm){s.flags.capeChallenge=true;this.startEvent('capeStorm');return true;}
@@ -204,7 +217,7 @@ class VoyageEngine{
   if(!Array.isArray(s.log)||s.log.length>240||s.log.some(v=>!obj(v)||!text(v.title,300)||!text(v.body,4000)||!int(v.day,1)))bad();
   if(!Array.isArray(s.decisions)||s.decisions.length>1000||s.decisions.some(v=>!obj(v)||!text(v.title,300)||!text(v.choice,1000)||!int(v.day,1)))bad();
   if(!Array.isArray(s.trail)||!s.trail.length||s.trail.length>5000||s.trail.some(v=>!seaPoint(v)))bad();
-  if(!obj(s.flags)||Object.entries(s.flags).some(([k,v])=>!['capeChallenge','cape','malindi','calicut','canary','atlantic','caribbean','magellan','madeira','westCurrent','westBirds','capeverde','angola','mozambique'].includes(k)||typeof v!=='boolean'))bad();
+  if(!obj(s.flags)||Object.entries(s.flags).some(([k,v])=>!['capeApproach','capeChallenge','cape','malindi','calicut','canary','atlantic','caribbean','magellan','madeira','westCurrent','westBirds','capeverde','angola','mozambique'].includes(k)||typeof v!=='boolean'))bad();
   if(!obj(s.visitedPorts)||Object.entries(s.visitedPorts).some(([k,v])=>!this.port(k)||!int(v,0,s.step)))bad();
   const safe=s.lastSafe&&this.port(s.lastSafe.id);
   if(!safe||!['home','port','goal'].includes(safe.type)||s.lastSafe.x!==safe.x||s.lastSafe.y!==safe.y||!Array.isArray(s.reflection)||s.reflection.length!==3||s.reflection.some(v=>!text(v,2000)))bad();

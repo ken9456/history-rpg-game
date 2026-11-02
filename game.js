@@ -35,9 +35,9 @@ function voyageNavigation(s){
  // Switch only when the ship is within two orthogonal map steps of Cape of Good Hope.
  // This matches the four-direction movement system; do not use broad geographic ranges.
  const capeDistance=cape?Math.abs(s.x-cape.x)+Math.abs(s.y-cape.y):Infinity;
- const nearCape=capeDistance<=2;
+ const nearCape=capeDistance<=2 || !!s.flags?.capeApproach || !!s.flags?.cape;
  if(nearCape){
-  return {dirs:['west','northeast'],message:'已接近或繞過好望角：可向西探索大西洋，或向東北沿東非海岸前往馬林迪及印度。向東北須逐格向東或向北航行。'};
+  return {dirs:['west','northeast'],message:'已到達好望角附近：可向西探索大西洋，或沿東非海岸向東北前往馬林迪及印度。此航向提示會維持至抵達印度；實際航行仍逐格向東或向北。'};
  }
  return {dirs:['west','south'],message:'可向西探索大西洋，或沿非洲西岸向南航行，尋找好望角。'};
 }
