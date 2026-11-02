@@ -68,25 +68,33 @@ class VoyageEngine{
  }
 
  checkArrival(){const s=this.s;if(!s.route||s.finished||s.stage>=this.targets().length)return false;
-  const routeTargets=this.targets();
-  // Physical arrival at a historical destination must not depend on having visited
-  // every optional waypoint. This also repairs in-progress saves with stale stages.
-  const goalId=s.route==='west'?'caribbean':'calicut';
-  const goal=this.port(goalId);
+  // Final historical destinations take priority over the initially inferred
+  // route. An old save may be marked WEST even when the ship actually reaches
+  // Calicut: in that case use the EAST story and its completion requirements.
   const near=p=>p&&Math.abs(s.x-p.x)+Math.abs(s.y-p.y)<=1;
-  // The Caribbean landing marker (10,9) and the playable island anchorage
-  // (11,10) are diagonal neighbours. The ship cannot stand on the land marker;
-  // reaching the island anchorage must count as arrival as well.
-  const landingSupply=s.route==='west'?this.port('caribbean_supply'):null;
-  const atDestination=near(goal)||(landingSupply&&near(landingSupply));
-  if(atDestination&&!s.flags[goalId]){
-   s.stage=routeTargets.length-1;
-   s.discovered=unique([...s.discovered,goalId]);
-   this.effects({knowledge:1,morale:1});
-   this.log('抵達主要目的地',goal.name+'：已到達歷史航程的目的地，開始史實故事。');
-   this.scene(this.chapterKey(goalId),'milestone',{milestone:goalId});
-   return true;
+  const westGoal=this.port('caribbean');
+  const westAnchorage=this.port('caribbean_supply');
+  const eastGoal=this.port('calicut');
+  const arrivedWest=near(westGoal)||near(westAnchorage);
+  const arrivedEast=near(eastGoal);
+  if(arrivedWest||arrivedEast){
+   const destinationRoute=arrivedEast?'east':'west';
+   const goalId=arrivedEast?'calicut':'caribbean';
+   const goal=arrivedEast?eastGoal:westGoal;
+   if(!s.flags[goalId]){
+    if(s.route!==destinationRoute){
+     this.log('修正航線紀錄','船隊實際抵達'+goal.name+'；航海日誌改以'+(destinationRoute==='east'?'東線':'西線')+'歷史航程結算。');
+     s.route=destinationRoute;
+    }
+    s.stage=this.targets().length-1;
+    s.discovered=unique([...s.discovered,goalId]);
+    this.effects({knowledge:1,morale:1});
+    this.log('抵達主要目的地',goal.name+'：開始對應航海家的歷史故事。');
+    this.scene(this.chapterKey(goalId),'milestone',{milestone:goalId});
+    return true;
+   }
   }
+  const routeTargets=this.targets();
   // The Cape is also an important historical landmark even if earlier simulated
   // supply stops were skipped. Preserve the existing storm challenge.
   if(s.route==='east'&&!s.flags.cape){const cape=this.port('cape');if(near(cape)){
