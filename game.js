@@ -32,6 +32,11 @@ function guided(){if(E.s&&!E.s.pending&&!E.s.finished){E.notice('bearing');E.com
 function voyageNavigation(s){
  const port=id=>D.ports.find(p=>p.id===id);
  const eastern=s.route==='east'||(s.x>=D.EAST_OFFSET+8&&s.y>=16);
+ // At the southern Mozambique coast, show the overall northeast bearing
+ // rather than two separate cardinal suggestions. Movement stays four-way.
+ if(s.x>=D.EAST_OFFSET+19&&s.x<=D.EAST_OFFSET+26&&s.y>=20&&s.y<=27){
+  return {dirs:['northeast'],message:'沿東非海岸向東北前行，前往馬林迪，再橫渡印度洋抵達卡利庫特。請按可通行海格逐步向東或向北航行。'};
+ }
  const steps=eastern?[
   ['cape','好望角'],['mozambique','東非海岸'],['malindi','馬林迪'],['calicut','卡利庫特（印度）']
  ]:[['caribbean','加勒比海・巴哈馬群島']];
@@ -70,9 +75,9 @@ function renderHUD(){if(!E.s)return;const s=E.s,colors={food:'#9ac7a9',hull:'#8f
  $('missionTitle').textContent=s.finished?E.endingName():scene?.title||'海圖以外，有甚麼？';
  $('missionDescription').textContent=s.finished?'回顧整段航跡，再看看真正航海家的故事。':s.route?`向${target.shortName||target.name}附近探索。沿岸補給，留意每個決定的代價。`:'向西探索大西洋，或沿非洲向南。船由你掌舵，不用預先選航線。';
  $('chapterProgress').innerHTML=s.route?[0,1,2,3,4,5].map(n=>`<i class="${s.stage>n?'done':s.stage===n?'active':''}"></i>`).join(''):'';
- const arrows={west:['←','西'],east:['→','東'],north:['↑','北'],south:['↓','南']};const nav=voyageNavigation(s),dirs=nav.dirs;
+ const arrows={west:['←','西'],east:['→','東'],north:['↑','北'],south:['↓','南'],northeast:['↗','東北']};const nav=voyageNavigation(s),dirs=nav.dirs;
  $('bearing').textContent=s.finished?'下一次，可以用新的方法出發。':'副船長：'+nav.message;
- $('bearingArrows').innerHTML=s.finished?'':dirs.map(d=>`<span class="bearing-arrow"><b>${arrows[d][0]}</b><span>下一格向${arrows[d][1]}</span></span>`).join('');$('guidedButton').disabled=!!s.pending||s.finished;
+ $('bearingArrows').innerHTML=s.finished?'':dirs.map(d=>`<span class="bearing-arrow"><b>${arrows[d][0]}</b><span>${d==='northeast'?'向東北前行':'下一格向'+arrows[d][1]}</span></span>`).join('');$('guidedButton').disabled=!!s.pending||s.finished;
  const near=D.ports.find(p=>Math.abs(p.x-s.x)+Math.abs(p.y-s.y)<=1);$('locationName').textContent=near?.shortName||near?.name||'未知海域 · 探索中';$('routeLabel').textContent=s.route==='west'?'WEST · 向西探索':s.route==='east'?'SOUTH · 沿非洲探索':'SET SAIL · 自由起航';
  $('voyageDay').innerHTML=`<small>模擬航行</small><strong>第 ${s.days} 日</strong><small>已行 ${s.step} 格</small>`;$('classroomClock').textContent=`課堂 ${Math.floor(s.classroomSeconds/60)} / 30 分鐘`;$('cardCount').textContent=s.cards.length;
  const nearest=D.ports.filter(p=>['port','home','goal'].includes(p.type)&&s.revealed[D.idx(p.x,p.y)]).map(p=>({p,d:Math.abs(p.x-s.x)+Math.abs(p.y-s.y)})).sort((a,b)=>a.d-b.d)[0];
