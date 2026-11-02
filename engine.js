@@ -67,7 +67,30 @@ class VoyageEngine{
   this.commit();return {ok:true};
  }
 
- checkArrival(){const s=this.s;if(!s.route||s.finished||s.stage>=this.targets().length)return false;const p=this.target();if(!p||Math.abs(s.x-p.x)+Math.abs(s.y-p.y)>1)return false;
+ checkArrival(){const s=this.s;if(!s.route||s.finished||s.stage>=this.targets().length)return false;
+  const routeTargets=this.targets();
+  // Physical arrival at a historical destination must not depend on having visited
+  // every optional waypoint. This also repairs in-progress saves with stale stages.
+  const goalId=s.route==='west'?'caribbean':'calicut';
+  const goal=this.port(goalId);
+  const near=p=>p&&Math.abs(s.x-p.x)+Math.abs(s.y-p.y)<=1;
+  if(near(goal)&&!s.flags[goalId]){
+   s.stage=routeTargets.length-1;
+   s.discovered=unique([...s.discovered,goalId]);
+   this.effects({knowledge:1,morale:1});
+   this.log('抵達主要目的地',goal.name+'：已到達歷史航程的目的地，開始史實故事。');
+   this.scene(this.chapterKey(goalId),'milestone',{milestone:goalId});
+   return true;
+  }
+  // The Cape is also an important historical landmark even if earlier simulated
+  // supply stops were skipped. Preserve the existing storm challenge.
+  if(s.route==='east'&&!s.flags.cape){const cape=this.port('cape');if(near(cape)){
+   s.stage=Math.max(s.stage,routeTargets.indexOf('cape'));
+   if(!s.flags.capeChallenge&&this.content.events.capeStorm){s.flags.capeChallenge=true;this.startEvent('capeStorm');return true;}
+   s.discovered=unique([...s.discovered,'cape']);this.effects({knowledge:1,morale:1});
+   this.scene('cape','milestone',{milestone:'cape'});return true;
+  }}
+  const p=this.target();if(!near(p))return false;
   // The Cape storm is a full playable event before the landmark story.
   if(p.id==='cape'&&!s.flags.capeChallenge&&this.content.events.capeStorm){s.flags.capeChallenge=true;this.startEvent('capeStorm');return true;}
   const key=this.chapterKey(p.id);
