@@ -35,7 +35,7 @@ class VoyageEngine{
  finishNotice(){const p=this.s.pending;if(p?.type!=='notice')return;this.s.pending=null;if(!this.checkArrival()&&!this.checkCrisis())this.checkDeadline();this.commit();}
  heading(){const s=this.s,t=this.target();if(!t)return ['west','south'];const dx=t.x-s.x,dy=t.y-s.y;const out=[];if(dx)out.push(dx<0?'west':'east');if(dy)out.push(dy<0?'north':'south');return out.length?out:['south'];}
  detectRoute(){const s=this.s;if(s.route)return false;const h=this.port('lisbon');let route=null;if(s.x<=h.x-3)route='west';else if(s.y>=h.y+4)route='east';if(!route)return false;s.route=route;s.lastProgressDay=s.days;this.scene(route+'_departure');this.log('航向帶來的新故事',route==='west'?'你實際向西航行，開始橫渡大西洋的故事。':'你實際沿非洲向南航行，開始通往印度的故事。');return true;}
- checkDeadline(){const s=this.s;if(s.finished)return false;if((s.days>35&&!s.flags.cape&&!s.flags.caribbean)||s.days-s.lastProgressDay>35){this.finish(false,'noProgress');return true;}return false;}
+ checkDeadline(){const s=this.s;if(s.finished)return false;if(s.days>35){this.finish(false,'noProgress');return true;}return false;}
  afterSailing(){if(this.checkArrival()||this.checkCrisis()||this.checkDeadline())return;const s=this.s;if((s.step-s.lastSupplyStep>=8||s.food<=6)&&s.step-s.lastSupplyWarning>=6){s.lastSupplyWarning=s.step;this.notice('supply');}}
  tick(seconds){const s=this.s;if(!s||s.classroomClosed||s.pending?.type==='report')return;const n=clamp(Math.floor(seconds),0,10);s.classroomSeconds+=n;if(!s.finished)s.elapsed+=n;if(s.classroomSeconds>=1440&&!s.finished){s.pending=null;this.finish(true,'classroom');return true;}if(s.classroomSeconds>=s.classroomLimit){s.classroomClosed=true;if(!s.finished){s.pending=null;this.finish(true,'classroom');}s.pending={type:'report'};this.log('課堂時間到，保存本次成果','30分鐘課堂模式已結算。未讀史實可在成果頁重看；閱讀時間不影響綜合分數。');this.commit();return true;}return false;}
 
@@ -60,7 +60,7 @@ class VoyageEngine{
  move(x,y){const s=this.s;if(s.pending||s.finished)return {ok:false,reason:'先完成眼前的對話或選擇。'};if(!this.map.sea(x,y))return {ok:false,reason:'前方無法通行，請另選船旁海格。'};if(Math.abs(x-s.x)+Math.abs(y-s.y)!==1)return {ok:false,reason:'輕觸相鄰海格，或使用方向按鈕。'};
   s.x=x;s.y=y;s.step++;if(s.step%4===0)s.days++;s.trail.push({x,y});if(s.step%2===0)this.effects({food:-1});if(s.step%6===0)this.effects({morale:-1});if(s.food<=4&&s.step%2===0)this.effects({morale:-1});this.map.reveal(s,x,y);
   for(const p of this.map.ports){if(Math.abs(p.x-x)+Math.abs(p.y-y)<=1){if(!s.discovered.includes(p.id)){s.discovered.push(p.id);this.log('發現地點：'+p.name,p.fact||'');}if(['home','port','goal'].includes(p.type)){const changed=p.id!==s.lastPassed.id;s.lastPassed={id:p.id,x,y,trailIndex:s.trail.length-1};if(changed)this.log('記下退航補給點',p.name+'：即使尚未補給，船隊已經過這個地點。');}}}
-  if(!this.checkCrisis()&&!this.checkDeadline()&&!this.detectRoute()&&!this.checkArrival()){
+  if(!this.detectRoute()&&!this.checkArrival()&&!this.checkCrisis()&&!this.checkDeadline()){
    if((s.step-s.lastSupplyStep>=8||s.food<=6)&&s.step-s.lastSupplyWarning>=6){s.lastSupplyWarning=s.step;this.notice('supply');}
    else if(s.step>=s.eventNext){s.eventNext=s.step+5;const common=['wind','ration','sail','bird','calm','chart','disease','quarrel','current','rain','reef','hope','light'];if(s.route==='east'&&s.stage>2)common.push('merchant');const pool=common.filter(k=>!s.eventSeen.includes(k));if(pool.length)this.startEvent(pool[Math.floor(this.rand()*pool.length)]);}
   }
@@ -81,17 +81,17 @@ class VoyageEngine{
   s.pending={type:'result',title:choice.success?'航向漸漸清晰':'仍有修正的機會',text:choice.feedback,effects:fx,lesson:ev.lesson||null,next:choice.mini?{type:'miniInit',kind:choice.mini,eventKey:p.key}:null};this.commit();
  }
  improve(key,text){if(this.s.setbacks.includes(key)&&!this.s.improvements.includes(key)){this.s.improvements.push(key);this.log('我的改進：'+(this.content.events[key]?.title||key),text);}}
- continueResult(){const p=this.s.pending;if(p?.type!=='result')return;this.s.pending=null;if(!this.checkCrisis()&&!this.checkDeadline()){if(p.next?.type==='miniInit')this.startMini(p.next.kind,p.next.eventKey);else this.afterSailing();}this.commit();}
+ continueResult(){const p=this.s.pending;if(p?.type!=='result')return;this.s.pending=null;if(!this.checkArrival()&&!this.checkCrisis()&&!this.checkDeadline()){if(p.next?.type==='miniInit')this.startMini(p.next.kind,p.next.eventKey);else this.afterSailing();}this.commit();}
  nearbyPort(){return this.map.ports.find(p=>['home','port','goal'].includes(p.type)&&Math.abs(p.x-this.s.x)+Math.abs(p.y-this.s.y)<=1);}
  dock(option){const s=this.s,p=this.nearbyPort();if(s.pending||s.finished||!p)return {ok:false,reason:'先航行至港口標記旁邊一格。'};if(s.step-(s.visitedPorts[p.id]??-100)<5)return {ok:false,reason:'此港仍在準備物資；離港航行5格後可再次補給。'};if(![0,1,2].includes(option))return {ok:false};
   const fx=this.effects([{food:12,morale:4},{food:4,hull:8,morale:8},{food:6,knowledge:2,morale:2}][option]);s.days+=option===1?2:1;s.lastSupplyStep=s.step;s.visitedPorts[p.id]=s.step;s.lastSafe={id:p.id,x:p.x,y:p.y};
   if(option===2){s.inquiries=unique([...s.inquiries,'port:'+p.id]);this.improve('chart','請教當地航海員後，你修訂了舊海圖。');this.improve('current','交流觀測方法後，你重新估算船位。');}
   if(option===1){this.improve('sail','你付出休整時間，修復了損壞的船帆。');this.improve('quarrel','港口休息與共同規劃，幫助船員重建合作。');this.improve('hope','短期休整後，船隊重新評估航程。');}
   if(option===0){this.improve('ration','你調整航線進港，補充食物與淡水。');this.improve('disease','你靠岸尋找新鮮食物和照護，沒有只顧趕路。');}
-  this.log('在'+p.name+'休整',['補充食物與淡水','修理船隻並讓船員休息','向當地航海員請教'][option]+'。花費'+(option===1?2:1)+'個模擬航海日。');this.checkDeadline();this.commit();return {ok:true,effects:fx};
+  this.log('在'+p.name+'休整',['補充食物與淡水','修理船隻並讓船員休息','向當地航海員請教'][option]+'。花費'+(option===1?2:1)+'個模擬航海日。');if(!this.checkArrival())this.checkDeadline();this.commit();return {ok:true,effects:fx};
  }
  checkCrisis(){const s=this.s;if(s.finished)return false;if(s.food<=0&&s.morale<=0){this.finish(false,'supplyMorale');return true;}if(s.hull<=0||s.morale<=0||s.food<=0){s.pending={type:'rescue',cause:s.food<=0?'船上食物與淡水已耗盡，無法繼續遠航':s.hull<=0?'船隻損壞，無法安全前進':'船員已筋疲力盡，需要停航休整'};return true;}return false;}
- rescue(){if(this.s.pending?.type!=='rescue')return;const s=this.s,p=s.lastPassed;const reverse=s.trail.slice(p.trailIndex).reverse();for(const q of reverse.slice(1))s.trail.push({x:q.x,y:q.y,kind:'retreat'});s.x=p.x;s.y=p.y;s.food=12;s.hull=Math.max(s.hull,10);s.morale=Math.max(6,Math.min(20,s.morale+4));s.days+=3;s.rescues++;s.lastSupplyStep=s.step;s.lastPassed={...p,trailIndex:s.trail.length-1};s.pending=null;s.eventNext=Math.max(s.eventNext,s.step+3);this.map.reveal(s,s.x,s.y);this.log('重新規劃，安全再出發','補給耗盡或船隊無法前進。退回上一個經過的補給點「'+this.port(p.id).name+'」，花費3個模擬航海日；完整去程與退航線、知識和決策均保留。');if(!this.checkDeadline())this.checkArrival();this.commit();}
+ rescue(){if(this.s.pending?.type!=='rescue')return;const s=this.s,p=s.lastPassed;const reverse=s.trail.slice(p.trailIndex).reverse();for(const q of reverse.slice(1))s.trail.push({x:q.x,y:q.y,kind:'retreat'});s.x=p.x;s.y=p.y;s.food=12;s.hull=Math.max(s.hull,10);s.morale=Math.max(6,Math.min(20,s.morale+4));s.days+=3;s.rescues++;s.lastSupplyStep=s.step;s.lastPassed={...p,trailIndex:s.trail.length-1};s.pending=null;s.eventNext=Math.max(s.eventNext,s.step+3);this.map.reveal(s,s.x,s.y);this.log('重新規劃，安全再出發','補給耗盡或船隊無法前進。退回上一個經過的補給點「'+this.port(p.id).name+'」，花費3個模擬航海日；完整去程與退航線、知識和決策均保留。');if(!this.checkArrival())this.checkDeadline();this.commit();}
  requestRescue(){if(this.s.pending||this.s.finished||this.s.step===0)return false;this.s.pending={type:'rescue',cause:'主動停止冒險並向同伴求援'};this.commit();return true;}
  learnFromEvent(id){const c=this.content.lessons.find(c=>c.id===id);if(!c)return false;this.s.lessonUnlocks=unique([...this.s.lessonUnlocks,c.unlock]);this.s.inquiries=unique([...this.s.inquiries,'learn:'+id]);const result=this.readCard(id);this.commit();return result;}
 
@@ -125,7 +125,7 @@ class VoyageEngine{
  }
  retryMini(){const p=this.s.pending;if(p?.type!=='result'||!p.miniResult?.failed)return false;if(this.checkCrisis()){this.commit();return false;}const m=p.miniResult;this.s.days+=2;this.startMini(m.kind,m.eventKey||m.kind);this.s.pending.retry=true;this.commit();return true;}
  finish(returned=false,reason=null){const s=this.s;if(s.finished)return false;const forced=['supplyMorale','noProgress'].includes(reason);const complete=!forced&&!returned&&!!s.route&&s.stage>=this.targets().length;if(!forced&&!returned&&!complete)return false;if(returned&&!reason&&(s.pending||s.step===0))return false;
-  s.finished=true;s.returned=!complete;s.endReason=reason;s.pending=null;s.ending=forced?'ordinary':returned?'return':s.cards.length>=8&&s.resolved.length>=4?'legend':s.improvements.length>=2&&s.setbacks.length>=2?'scholar':'captain';
+  s.finished=true;s.returned=!complete;s.endReason=reason;s.pending=null;s.ending=forced?'ordinary':returned?'return':s.improvements.length>=2&&s.setbacks.length>=2?'scholar':s.cards.length>=8&&s.resolved.length>=4?'legend':'captain';
   s.result={cards:[...s.cards],places:[...s.discovered],resolved:[...s.resolved],improvements:[...s.improvements],days:s.days,steps:s.step,completed:complete};this.log('航程結局',this.endingName());this.scene('ending_'+s.ending,'review');this.commit();return true;
  }
  endingName(){return {legend:'傳奇探索家',return:'勇敢的歸航者',scholar:'求知的航海家',captain:'遠航船長',ordinary:'平凡的航海家'}[this.s.ending]||'自由探索中';}
